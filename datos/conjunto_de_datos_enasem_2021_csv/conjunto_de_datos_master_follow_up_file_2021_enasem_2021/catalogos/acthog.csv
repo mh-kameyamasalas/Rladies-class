@@ -1,0 +1,13 @@
+cve,descrip
+0,"Número de separación, muerte o nuevo cónyuge"
+1,Número separación muerte o nuevo cónyuge
+2,"Sin separación ni muerte, ambos fallecieron en 2001"
+10,"Separación, con NP = 010, sin nueva sp"
+11,"Separación, con NP = 010, nuevo cónyuge"
+12,"Separación, con NP = 010, ambos resp 2001 murieron"
+20,"Separación, con NP = 020, sin nueva sp"
+21,"Separación, con NP = 020, nuevo cónyuge"
+22,"Separación, con NP = 010, ambos fallecieron en 2001"
+30,"Encuestado falleció en 2001, no hay nuevo cónyuge"
+31,"Encuestado fallecido 2001, nuevo cónyuge"
+32,Ambos encuestados fallecidos 2001
