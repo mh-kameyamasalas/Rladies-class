@@ -19,21 +19,22 @@ knitr::opts_knit$set(root.dir = "/Users/hiromikameyama/Documents/github/Rladies-
 ```{r}
 set.seed(123)
 setwd("/Users/hiromikameyama/Documents/github/Rladies-class")
-ResDir= "/Users/hiromikameyama/Documents/github/Rladies-class/resultados/"
-DataDir="/Users/hiromikameyama/Documents/github/Rladies-class/datos/"
+ResDir= "resultados/"
+DataDir="datos/"
 ```
 
 #### Librerias y funciones
 
-Existe una paquetería de la INEGI: \##### Como instalar una paqueteria:
+Existe una paquetería de la INEGI: 
+##### Como instalar una paqueteria:
 
 ```{r}
-find.package("importinegi")
-install.packages("importinegi")
-devtools::install_github("crenteriam/importinegi")
+#find.package("importinegi")
+#install.packages("importinegi")
+#devtools::install_github("crenteriam/importinegi")
 
-library(importinegi)
-browseVignettes("importinegi")
+#library(importinegi)
+#browseVignettes("importinegi")
 ```
 
 #### Librerias a llamar y documento con funciones:
@@ -62,6 +63,7 @@ base <- read.csv(file = paste(DataDir,"basedatos_rladies.csv",sep = ""), header 
 ### 3. Exploracion de datos
 
 Es importante comprender como es nuestra base de datos
+
 ```{r}
 # Dimensiones 
 dim(base)
@@ -84,7 +86,8 @@ colnames(base)
 rownames(base)
 ```
 
-Una vez que hacemos una primera exploracion de base. Y determinamos que es de un tamaño "pequeño" podemos visualizarla asi: 
+Una vez que hacemos una primera exploracion de base. Y determinamos que es de un tamaño "pequeño" podemos visualizarla asi:
+
 ```{r}
 View(base)
 ```
@@ -132,45 +135,8 @@ shapiro.test(sample(temp, 5000))
 
 ### 6. Graficar los datos discretos y ejemplo de funcion
 
-```{r}
-
-# Función principal
-generar_tabla_y_grafico <- function(data, var_fila, var_columna) {
-  
-  # Crear tabla de contingencia
-  
-  tabla <- table(data[[var_fila]],data[[var_columna]], useNA = "no")
-
-######################################  # cambiar tipo de estructura 
-  tabla <- as.data.frame.matrix(tabla)
-  tabla <- na.omit(tabla)
-
-tabla[[var_fila]] <- rownames(tabla)
-
-print(tabla)
-#return(tabla)
-###################################### # cambiar formato de:  wide data frame --> long data frame 
-#### cambiar a long data frame 
-
-tabla_long <- tabla %>%
-  pivot_longer(
-    cols = -all_of(var_fila),
-    names_to = "Resultado",
-    values_to = "Frecuencia"
-  )
-
-########################################### # graficar 
-  # Graficar con ggplot2
-barras <- ggplot(tabla_long, aes(x = !!sym(var_fila), y = Frecuencia, fill = Resultado)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(x = var_fila, y = "Frecuencia", fill = "Resultado") +
-  theme_minimal()
-
-print(barras)
-}
-```
-
 #### Para correr la funcion documentada anteriormente:
+
 ```{r}
 
 data = base
@@ -187,14 +153,15 @@ generar_tabla_y_grafico(data, var_fila, var_columna)
 ```{r}
 # Columnas a elegir
 base$SEXO_01 <- as.factor(base$SEXO_01)
-df_clean <- na.omit(base[, c("Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", "EDAD_01", "SEXO_01")])
+colnames(base)[colnames(base) == "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE.."] <- "FALLECIMIENTO"
+df_clean <- na.omit(base[, c("FALLECIMIENTO", "EDAD_01", "SEXO_01")])
 ######################################  # Creacion de Scatter plot 
 
-sp <- ggscatter(df_clean, x = "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", y = "EDAD_01",color = "SEXO_01", palette = "jco", size = 3, alpha = 0.6, xlab ="Año de fallecimiento", ylab = "Edad" )+border() 
+sp <- ggscatter(df_clean, x = "FALLECIMIENTO", y = "EDAD_01",color = "SEXO_01", palette = "jco", size = 3, alpha = 0.6, xlab ="Año de fallecimiento", ylab = "Edad" )+border() 
 
 ######################################  # Generar las graficas de densidades of x (arriba) and y (derecha) 
 
-xplot <- ggdensity(df_clean, "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", fill = "SEXO_01",
+xplot <- ggdensity(df_clean, "FALLECIMIENTO", fill = "SEXO_01",
                    palette = "jco")
 yplot <- ggdensity(df_clean, "EDAD_01", fill = "SEXO_01", 
                    palette = "jco")+
@@ -260,4 +227,3 @@ combo <- ggarrange(xplot, NULL, violin_plot, yplot,
 
 print(combo)
 ```
-
