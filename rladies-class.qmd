@@ -5,34 +5,259 @@ format: html
 editor: visual
 ---
 
-## Quarto
+# **Introducción a R: desde cero a tu primer análisis de datos (EDA)**
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Taller de RLadies
 
-## Running Code
+### 1. Establecer el directorio de trabajo y semilla
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+```{r, setup, include=FALSE}
+getwd()
+knitr::opts_knit$set(root.dir = "/Users/hiromikameyama/Documents/github/Rladies-class")
+```
+
+```{r}
+set.seed(123)
+setwd("/Users/hiromikameyama/Documents/github/Rladies-class")
+ResDir= "/Users/hiromikameyama/Documents/github/Rladies-class/resultados/"
+DataDir="/Users/hiromikameyama/Documents/github/Rladies-class/datos/"
+```
+
+#### Librerias y funciones
+
+Existe una paquetería de la INEGI: \##### Como instalar una paqueteria:
 
 ```{r}
 find.package("importinegi")
-```
-
-You can add options to executable code like this
-
-```{r}
 install.packages("importinegi")
-```
-
-```{r}
-library(importinegi)
-library(devtools)
-```
-
-```{r}
-install.packages("devtools")
 devtools::install_github("crenteriam/importinegi")
-```
 
-```{r}
+library(importinegi)
 browseVignettes("importinegi")
 ```
+
+#### Librerias a llamar y documento con funciones:
+
+```{r, echo=FALSE, eval=FALSE}
+library(devtools)
+library(ggplot2)
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(cowplot)
+library(heatmaply)
+library(ggpubr)
+source("/Users/hiromikameyama/Documents/github/Rladies-class/eda_funciones.R")
+```
+
+![](/Users/hiromikameyama/Documents/github/Rladies-class/datos/indice.png)
+
+### 2. Cargar Datos Maestros
+
+```{r}
+base <- read.csv(file = paste(DataDir,"basedatos_rladies.csv",sep = ""), header = T)
+```
+
+### 3. Exploracion de datos
+
+Es importante comprender como es nuestra base de datos
+```{r}
+# Dimensiones 
+dim(base)
+
+# Visualizar primeras # filas
+head(base,n = 3)
+
+# Para comprender la estructira de base
+str(base)
+
+# Identificar los elementos dentro de una columna de base
+levels(as.factor(base$SEXO_01)) # para acceder a una columna del data frame se usa "$"
+
+# Exploración y creacion de tabla de contingencia
+table(as.factor(base$SEXO_01), as.factor(base$FALLECIDO_03))
+table(as.factor(base$SEXO_01), as.factor(base$FALLECIDO_18))
+
+# Nombre de columnas y filas
+colnames(base)
+rownames(base)
+```
+
+Una vez que hacemos una primera exploracion de base. Y determinamos que es de un tamaño "pequeño" podemos visualizarla asi: 
+```{r}
+View(base)
+```
+
+### 4. Encontrar NAs y cambiar espacios vacíos por NAs
+
+```{r}
+# Crear tabla de contingencia
+tabla_original <- table(as.factor(base$SEXO_01), as.factor(base$FALLECIDO_18))
+tabla_original
+
+# Encontrar el número de ""
+sum(base == "", na.rm = TRUE)
+# Cambiar todos "" por NAs 
+base[base == ""] <- NA
+# Encontrar el número de NAs 
+length(which(is.na(base)==TRUE))
+
+tabla_limpia <- table(as.factor(base$SEXO_01), as.factor(base$FALLECIDO_18))
+tabla_limpia
+```
+
+### 5. Estadísticos generales
+
+```{r}
+# Media 
+class(base$EDAD_01)
+mean(base$EDAD_01, na.rm = T)
+# Mediana 
+median(base$EDAD_01, na.rm = T)
+# Desviacion estandar
+sd(base$EDAD_01, na.rm = T)
+
+# Histograma
+hist(base$EDAD_01,breaks = 200)
+hist(base$EDAD_01, breaks = 200, main = "Edad de participantes", ylab = "Frecuencia", xlab = "Edad")
+
+# Determinar si hay una distribucion normal 
+qqnorm(base$EDAD_01, main = "Grafico cuantil-cuantil" )
+qqline(base$EDAD_01, col = "steelblue", lwd = 2, )
+
+temp <- na.omit(base$EDAD_01)
+shapiro.test(sample(temp, 5000))
+```
+
+### 6. Graficar los datos discretos y ejemplo de funcion
+
+```{r}
+
+# Función principal
+generar_tabla_y_grafico <- function(data, var_fila, var_columna) {
+  
+  # Crear tabla de contingencia
+  
+  tabla <- table(data[[var_fila]],data[[var_columna]], useNA = "no")
+
+######################################  # cambiar tipo de estructura 
+  tabla <- as.data.frame.matrix(tabla)
+  tabla <- na.omit(tabla)
+
+tabla[[var_fila]] <- rownames(tabla)
+
+print(tabla)
+#return(tabla)
+###################################### # cambiar formato de:  wide data frame --> long data frame 
+#### cambiar a long data frame 
+
+tabla_long <- tabla %>%
+  pivot_longer(
+    cols = -all_of(var_fila),
+    names_to = "Resultado",
+    values_to = "Frecuencia"
+  )
+
+########################################### # graficar 
+  # Graficar con ggplot2
+barras <- ggplot(tabla_long, aes(x = !!sym(var_fila), y = Frecuencia, fill = Resultado)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = var_fila, y = "Frecuencia", fill = "Resultado") +
+  theme_minimal()
+
+print(barras)
+}
+```
+
+#### Para correr la funcion documentada anteriormente:
+```{r}
+
+data = base
+var_fila = "FALLECIDO_03"
+var_columna = "SEXO_01"
+
+
+generar_tabla_y_grafico(data, var_fila, var_columna)
+
+```
+
+### 7. Graficar los datos continuos
+
+```{r}
+# Columnas a elegir
+base$SEXO_01 <- as.factor(base$SEXO_01)
+df_clean <- na.omit(base[, c("Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", "EDAD_01", "SEXO_01")])
+######################################  # Creacion de Scatter plot 
+
+sp <- ggscatter(df_clean, x = "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", y = "EDAD_01",color = "SEXO_01", palette = "jco", size = 3, alpha = 0.6, xlab ="Año de fallecimiento", ylab = "Edad" )+border() 
+
+######################################  # Generar las graficas de densidades of x (arriba) and y (derecha) 
+
+xplot <- ggdensity(df_clean, "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE..", fill = "SEXO_01",
+                   palette = "jco")
+yplot <- ggdensity(df_clean, "EDAD_01", fill = "SEXO_01", 
+                   palette = "jco")+
+  rotate()
+######################################  # Limpiar graficos
+
+yplot <- yplot + clean_theme() 
+xplot <- xplot + clean_theme()
+######################################  # Acomodar graficos
+
+combo <- ggarrange(xplot, NULL, sp, yplot, 
+          ncol = 2, nrow = 2,  align = "hv", 
+          widths = c(2, 1), heights = c(1, 2),
+          common.legend = TRUE)
+
+print(combo)
+
+```
+
+### Guardar datos y graficas
+
+```{r}
+# Para guardar una tabla 
+#write.csv(tabla_limpia, file =  paste(ResDir,"tabla-limpia.csv",sep = ""), row.names = T, quote = FALSE)
+
+# Para guardar un grafico 
+#ggsave( paste(ResDir,"scatter-plot.png",sep = ""), plot = sp, width = 8, height = 6, dpi = 300)
+
+#ggsave( paste(ResDir,"final-plot.png",sep = ""), plot = combo, width = 10, height = 8)
+```
+
+```{r}
+# Columnas a elegir
+base$SEXO_01 <- as.factor(base$SEXO_01)
+colnames(base)[colnames(base) == "Pregunta.SA8.2.21..Recuerdeme.por.favor...En.que.fecha.fallecio...NOMBRE.."] <- "FALLECIMIENTO"
+df_clean <- na.omit(base[, c("FALLECIMIENTO", "EDAD_01", "SEXO_01")])
+
+###################################### # Creacion de Violin plot
+violin_plot <- ggplot(df_clean, aes(x = as.factor(FALLECIMIENTO), y = EDAD_01, fill = SEXO_01)) +
+  geom_violin(trim = FALSE, scale = "width", color = "black", alpha = 0.7) +
+  scale_fill_manual(values = c("#3B9AB2", "#EFC000")) +  # colores similares a jco
+  theme_minimal() +
+  labs(x = "Año de fallecimiento", y = "Edad", fill = "Sexo") +
+  theme(legend.position = "top")+ geom_boxplot(width=0.1,position = position_dodge(width = 0.9))
+
+######################################  # Generar las graficas de densidades of x (arriba) and y (derecha) 
+
+xplot <- ggdensity(df_clean, "FALLECIMIENTO", fill = "SEXO_01",
+                   palette = "jco")
+yplot <- ggdensity(df_clean, "EDAD_01", fill = "SEXO_01", 
+                   palette = "jco")+
+  rotate()
+######################################  # Limpiar graficos
+
+yplot <- yplot + clean_theme() 
+xplot <- xplot + clean_theme()
+######################################  # Acomodar graficos
+
+combo <- ggarrange(xplot, NULL, violin_plot, yplot, 
+          ncol = 2, nrow = 2,  align = "hv", 
+          widths = c(2, 1), heights = c(1, 2),
+          common.legend = TRUE)
+
+print(combo)
+```
+
