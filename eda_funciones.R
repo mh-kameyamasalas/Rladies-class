@@ -32,4 +32,5 @@ generar_tabla_y_grafico <- function(data, var_fila, var_columna) {
     theme_minimal()
   
   print(barras)
+  
 }
