@@ -1,5 +1,7 @@
 # Introduccion-a-R-2025
 Introducción a R: desde cero a tu primer análisis de datos 
+Este es mi repositorio original y copia del respositorio: https://github.com/RladiesQro/Introduccion-a-R-2025 .
+En donde di mi taller de R. 
 
 ### ¿Qué es un análisis de datos exploratorios EDA (Exploratory Data Analysis)?
 
